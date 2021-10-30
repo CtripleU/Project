@@ -1,9 +1,6 @@
 ---
 # vars file for worker_node
-# vars file for worker_node
 
-services:
-  - kubelet
 
 pkg: iproute-tc
 

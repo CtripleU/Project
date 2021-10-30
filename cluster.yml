@@ -1,12 +1,5 @@
-# - hosts: localhost
-#   connection: local
-#   gather_facts: no
-#   tasks:
-#     - name: Running EC2 Role
-#       include_role:
-#         name: ec2
-
 - hosts: master_node
+  become: true
   user: centos
   gather_facts: no
   tasks:

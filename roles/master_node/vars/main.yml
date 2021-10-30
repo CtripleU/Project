@@ -3,8 +3,6 @@
 access_key: AKIAWPIXSHZC2ABWETMY
 secret_key: 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
 
-services:
-  - kubelet
 
 pkg: iproute-tc
 
@@ -18,4 +16,6 @@ docker_svc: docker
 ports:
 - "6443/tcp"
 - "10250/tcp"
+
+flannel_url: https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 

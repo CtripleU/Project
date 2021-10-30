@@ -44,15 +44,21 @@
 - name: Install docker
   command: dnf install docker-ce --nobest -y
 
+- name: Start Docker
+  service:
+    name: docker
+    state: started
+    enabled: true
+
 - name: Install kubeadm, kubelet, and kubectl
   yum: 
     name: "{{ k8s_repo_pkg }}"
     state: present
   register: kubeadm
 
-- name: Start services
+- name: Start Kubelet
   service:
-    name: "{{ services }}"
+    name: kubelet
     state: started
     enabled: true
 

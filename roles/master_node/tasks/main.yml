@@ -42,8 +42,14 @@
 - name: Get dnf
   command: dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
 
-- name: Install docker
+- name: Install Docker
   command: dnf install docker-ce --nobest -y
+
+- name: Start Docker
+  service:
+    name: docker
+    state: started
+    enabled: true
 
 - name: Install kubeadm, kubelet, and kubectl
   yum: 
@@ -51,9 +57,9 @@
     state: present
   register: kubeadm
 
-- name: Start services
+- name: Start Kubelet
   service:
-    name: "{{ services }}"
+    name: kubelet
     state: started
     enabled: true
 
@@ -95,16 +101,25 @@
       sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
       sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-- name: Install Flannel Network Add-on
-  command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+- name: "Downloading FLannel"
+  get_url:
+      url: "{{ flannel_url }}"
+      dest: "/k8s/"
+  ignore_errors: yes
+
+- name: "Installing Flannel"
+  command: "kubectl apply -f kube-flannel.yml"
+  args:
+      chdir: /k8s/
+  ignore_errors: yes
 
 - name: Generate join token
   command: kubeadm token create  --print-join-command
   register: output
 
-- name: debugging
-  debug:
-    var: output.stdout
+# - name: debugging
+#   debug:
+#     var: output.stdout
 
 - name: Cleaning Caches on RAM
   shell: echo 3 > /proc/sys/vm/drop_caches
