@@ -517,7 +517,7 @@ Now that the ec2 instances have been provisioined, you can configure them to cre
 <a name="deploy">
 
 ## Deployment of Docker image and creation of Persistent Volume and Persistent Volume Claim
-Kubernetes does not offer data persistence out of the box. This means that whatever the pod is restarted, whatever data was stored or updated would be gone. This is you need a storage that doesn't depend on the pod lifecycle. When you create a persistent volume, it remains after one pod dies and another gets created. The new pod can easily pick up where the previous one left off by reading the existing data from the storage to get up-to-date data.
+Kubernetes does not offer data persistence out of the box. This means that whenever a pod is restarted, whatever data was stored or updated would be gone. This is you need a storage that doesn't depend on the pod lifecycle. When you create a persistent volume, it remains after one pod dies and another gets created. The new pod can easily pick up where the previous one left off by reading the existing data from the storage to get up-to-date data.
 
 I created a YAML file that:
 - deployed a REST API of a Docker image
