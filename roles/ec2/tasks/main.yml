@@ -1,0 +1,161 @@
+---
+# tasks file for ec2
+
+
+- name: Create VPC for ec2 instances
+  ec2_vpc_net:
+    aws_access_key: "{{ access_key }}"
+    aws_secret_key: "{{ secret_key }}"
+    name: ansibleVPC
+    state: present
+    cidr_block: "{{ vpcCidrBlock }}"
+    region: "{{ region_name }}"
+  register: ansibleVPC
+      
+- name: Create internet gateway for ansibleVPC
+  ec2_vpc_igw:
+    aws_access_key: "{{ access_key }}"
+    aws_secret_key: "{{ secret_key }}"
+    state: present
+    region: "{{ region_name }}"
+    vpc_id: "{{ ansibleVPC.vpc.id }}"
+    tags:
+      Name: ansibleVPC_IGW     
+  register: ansibleVPC_igw
+
+- name: Get all Availability Zones present in {{ region_name }}
+  aws_az_facts:
+    aws_access_key: "{{ access_key }}"
+    aws_secret_key: "{{ secret_key }}"
+    region: "{{ region_name }}"
+  register: az_in_region
+  
+- name: Show all Availability Zones present in {{ region_name }}
+  debug: 
+    var: az_in_region
+
+- name: Show the zones that will be used for the public and private subnets
+  debug:
+    msg:
+      - "public subnet: {{ az_in_region.availability_zones[0].zone_name }}"
+      - "private subnet: {{ az_in_region.availability_zones[1].zone_name }}"
+
+- name: Create public subnet
+  ec2_vpc_subnet:
+    aws_access_key: "{{ access_key }}"
+    aws_secret_key: "{{ secret_key }}"
+    state: present
+    cidr: "{{ subNetCidrBlock }}"
+    az: "{{ az_in_region.availability_zones[0].zone_name }}"
+    vpc_id: "{{ ansibleVPC.vpc.id }}"
+    region: "{{ region_name }}"
+    map_public: yes
+    tags:
+      Name: public subnet
+  register: public_subnet
+
+- name: Show public subnet details
+  debug: 
+    var: public_subnet
+
+- name: Create private subnet
+  ec2_vpc_subnet:
+    aws_access_key: "{{ access_key }}"
+    aws_secret_key: "{{ secret_key }}"
+    state: present
+    cidr: "{{ subNetCidrBlockPriv }}"
+    az: "{{ az_in_region.availability_zones[1].zone_name }}"
+    vpc_id: "{{ ansibleVPC.vpc.id }}"
+    region: "{{ region_name }}"
+    resource_tags:
+      Name: private subnet
+  register: private_subnet
+
+- name: Show private subnet details
+  debug: 
+    var: private_subnet
+
+- name: Create route table for public subnet
+  ec2_vpc_route_table:
+    aws_access_key: "{{ access_key }}"
+    aws_secret_key: "{{ secret_key }}"
+    state: present
+    region: "{{ region_name }}"
+    vpc_id: "{{ ansibleVPC.vpc.id }}"
+    tags:
+      Name: rt_ansibleVPC_PublicSubnet
+    subnets:
+      - "{{ public_subnet.subnet.id }}"
+    routes:
+      - dest: "{{ destinationCidrBlock }}"
+        gateway_id: "{{ ansibleVPC_igw.gateway_id }}"
+  register: rt_ansibleVPC_PublicSubnet
+    
+- name: display public route table
+  debug: var=rt_ansibleVPC_PublicSubnet
+
+- name: Create a security group
+  ec2_group:
+    aws_access_key: "{{ access_key }}"
+    aws_secret_key: "{{ secret_key }}"
+    state: present
+    name: sg_ansibleVPC_publicsubnet_host
+    description: security group for hosts within the public subnet of ansible VPC
+    vpc_id: "{{ ansibleVPC.vpc.id }}"
+    region: "{{ region_name }}"
+    rules:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+        rule_desc: allow all ports
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+  register: sg_ansibleVPC_publicsubnet_host
+
+- name: Show details for host security group
+  debug: 
+    var: sg_ansibleVPC_publicsubnet_host 
+
+- name: Deploy ec2 instances
+  ec2:
+    aws_access_key: "{{ access_key }}"
+    aws_secret_key: "{{ secret_key }}"
+    key_name: "{{ keypair }}"
+    wait: true
+    image: "{{ ami_id }}"
+    group_id: "{{ sg_ansibleVPC_publicsubnet_host.group_id }}"
+    vpc_subnet_id: "{{ public_subnet.subnet.id }}"
+    assign_public_ip: yes
+    region: "{{ region_name }}"
+    instance_type: "{{ instance_type }}"
+    count: 1
+    state: present
+    instance_tags:
+      Name: "{{ item }}"
+  register: ec2
+  loop: "{{ instance_tag }}"
+
+- name: display details for servers
+  debug: 
+    var: ec2
+
+- name: Add instance 1 to a host group called master_node
+  add_host:
+    hostname: "{{ ec2.results[0].instances[0].public_ip }}"
+    groupname: master_node
+
+- name: Add instance 2 to a host group called worker_node
+  add_host:
+    hostname: "{{ ec2.results[1].instances[0].public_ip }}"
+    groupname: worker_node
+
+- name: Add instance 3 to the worker_node host group 
+  add_host:
+    hostname: "{{ ec2.results[2].instances[0].public_ip }}"
+    groupname: worker_node
+
+- name: Wait for SSH to come up
+  wait_for:
+    host: "{{ ec2.results[2].instances[0].public_dns_name }}"
+    port: 22
+    state: started

@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-rest
+  labels:
+    app: hello-world-rest
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello-world-rest
+  template:
+    metadata:
+      labels:
+        app: hello-world-rest
+    spec:
+      containers:
+      - name: hello-world-rest
+        image: vad1mo/hello-world-rest        
+        ports:
+        - containerPort: 5050
+      volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: my-test-pvc 
+       
+---
+#service to expose the above deployment
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-rest
+spec:
+  ports:
+    - targetPort: 5050
+      nodePort: 31000 
+      port: 5050          
+  type:  NodePort
+  selector:    
+      app: hello-world-rest
+
+---
+#persistent volume for the deployment above
+
+  apiVersion: v1
+  kind: PersistentVolume
+  metadata:
+    name: my-pv 
+    labels:
+      type: local
+  spec:
+    storageClassName: manual 
+    capacity:
+      storage: 5Gi
+    accessModes:
+      - ReadWriteMany 
+    persistentVolumeReclaimPolicy: Retain
+    hostPath:
+      path: "/data/kubernetes/persistent-volume/my-pv" 
+
+---  
+#persistent volume claim
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-test-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: manual

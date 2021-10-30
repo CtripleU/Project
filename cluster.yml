@@ -1,0 +1,32 @@
+# - hosts: localhost
+#   connection: local
+#   gather_facts: no
+#   tasks:
+#     - name: Running EC2 Role
+#       include_role:
+#         name: ec2
+
+- hosts: master_node
+  user: centos
+  gather_facts: no
+  tasks:
+    - name: Running K8s Master Role
+      include_role:
+        name: master_node
+
+- hosts: worker_node
+  user: centos
+  gather_facts: no
+  tasks:
+    - name: Running K8s Worker Role
+      include_role:
+        name: worker_node
+
+- hosts: worker_node
+  user: centos
+  gather_facts: no
+  tasks:
+    - name: Running K8s Worker Role
+      include_role:
+        name: worker_node
+

@@ -1,0 +1,23 @@
+---
+# vars file for ec2
+
+access_key: AKIAWPIXSHZC2ABWETMY
+secret_key: 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
+keypair: ansible
+
+region_name: us-east-1
+
+vpcCidrBlock: '10.0.0.0/16'
+subNetCidrBlock: '10.0.1.0/24'
+subNetCidrBlockPriv: '10.0.2.0/24'
+destinationCidrBlock: '172.17.0.0/0'
+
+ami_id: ami-0d6e9a57f6259ba3a #centos 8
+instance_type: t3.micro
+
+instance_tag:
+  - master
+  - worker1
+  - worker2
+
+

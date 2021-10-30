@@ -1,0 +1,110 @@
+---
+# defaults file for master_node
+
+
+- name: Disabling swap
+  shell: swapoff -a
+
+- name: Commenting Swap entries in /etc/fstab
+  replace:
+    path: /etc/fstab
+    regexp: '(.*swap*)'
+    replace: '#\1'
+
+- name: Configuring yum repo for k8s master node
+  yum_repository:
+    name: kubernetes
+    description: Kubernetes repo
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch
+    enabled: 1
+    gpgcheck: 1
+    repo_gpgcheck: yes
+    gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+-  name: Install iproute-tc
+   yum:
+    name: "{{ pkg }}"
+    state: present
+
+- name: Installing firewalld
+  package:
+    name:
+      - firewalld
+    state: present
+
+-  name: Giving --no-best option
+   replace:
+    path: "/etc/dnf/dnf.conf"
+    regexp: "True"
+    after: "best="
+    replace: "False"
+
+- name: Get dnf
+  command: dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+
+- name: Install docker
+  command: dnf install docker-ce --nobest -y
+
+- name: Install kubeadm, kubelet, and kubectl
+  yum: 
+    name: "{{ k8s_repo_pkg }}"
+    state: present
+  register: kubeadm
+
+- name: Start services
+  service:
+    name: "{{ services }}"
+    state: started
+    enabled: true
+
+- name: Pulling images required for setting up the kubernetes cluster
+  command: kubeadm config images pull
+
+- name: Updating docker cgroup on master Node
+  copy:
+    dest: /etc/docker/daemon.json
+    src: daemon.json
+
+- name: Restart Docker service
+  service: 
+    name: "{{ docker_svc }}"
+    state: restarted
+
+- name: Starting firewalld service
+  service:
+    name: firewalld
+    state: started
+    enabled: true
+
+- name: Allow Network ports in Firewalld
+  firewalld:
+    port: "{{ item }}"
+    state: enabled
+    permanent: yes
+    immediate: yes
+  with_items: "{{ ports }}"
+
+- name: Initializing cluster
+  become: yes    
+  command: kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem
+
+- name: Setting up kubectl (Creating the directory, setting up configuration files, and Changing the owner of .kube/config)
+  shell:
+    cmd: |
+      mkdir -p $HOME/.kube
+      sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+      sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+- name: Install Flannel Network Add-on
+  command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+- name: Generate join token
+  command: kubeadm token create  --print-join-command
+  register: output
+
+- name: debugging
+  debug:
+    var: output.stdout
+
+- name: Cleaning Caches on RAM
+  shell: echo 3 > /proc/sys/vm/drop_caches

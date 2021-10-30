@@ -1,0 +1,21 @@
+---
+# vars file for master_node
+access_key: AKIAWPIXSHZC2ABWETMY
+secret_key: 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
+
+services:
+  - kubelet
+
+pkg: iproute-tc
+
+k8s_repo_pkg:
+  - kubeadm
+  - kubectl
+  - kubelet
+
+docker_svc: docker
+
+ports:
+- "6443/tcp"
+- "10250/tcp"
+
