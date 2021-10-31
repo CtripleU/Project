@@ -1,8 +1,8 @@
 ---
 # vars file for ec2
 
-access_key: AKIAWPIXSHZC2ABWETMY
-secret_key: 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
+access_key: ******************
+secret_key: ************************
 keypair: ansible
 
 region_name: us-east-1
