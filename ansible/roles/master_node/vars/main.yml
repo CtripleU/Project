@@ -1,7 +1,7 @@
 ---
 # vars file for master_node
-access_key: AKIAWPIXSHZC2ABWETMY
-secret_key: 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
+access_key: ********************
+secret_key: *******************************
 
 
 pkg: iproute-tc
