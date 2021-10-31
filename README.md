@@ -27,7 +27,7 @@ The AWS instances were provisioned using Ansible. Follow these steps to reproduc
 ### Preliminaries
 1. Create a new directory and name it Project. This is where all files will be located.
 
-2. Log in to your AWS account and create an IAM role with AWS credential type Access key - Programmatic access. This ensures that the IAM role is assigned an access key and secret access key which is used for AWS CLI configuration. Set the permissions boundary to AmazonEC2FullAccess.
+2. Log in to your AWS account and create an IAM user with AWS credential type Access key - Programmatic access. This ensures that the IAM role is assigned an access key and secret access key which is used for AWS CLI configuration. Set the permissions boundary to AmazonEC2FullAccess.
 
 
 3. Navigate to Key pairs and create a new RSA Key pair that would be used to create and ssh into instances from the AWS CLI. Download the .pem file and put it in Projects directory. The Key pair I created is called ansible.pem.
